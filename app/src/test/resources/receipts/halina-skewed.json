@@ -1,0 +1,264 @@
+{
+  "source": "Sanitized ML Kit output from supplied low-resolution receipt, recognized at 2x and boxes mapped to source coordinates. Numeric expectations checked against image; names retain OCR spelling. No source image retained.",
+  "name": "halina-skewed",
+  "lines": [
+    {
+      "text": "TEST RECEIPT",
+      "box": {
+        "left": 0,
+        "top": 0,
+        "right": 150,
+        "bottom": 15
+      }
+    },
+    {
+      "text": "ITEMS ORDERED",
+      "box": {
+        "left": 116,
+        "top": 102,
+        "right": 193,
+        "bottom": 114
+      }
+    },
+    {
+      "text": "1 SLAMDUNK WINGS",
+      "box": {
+        "left": 120,
+        "top": 125,
+        "right": 212,
+        "bottom": 140
+      }
+    },
+    {
+      "text": "1 LUMPIA",
+      "box": {
+        "left": 121,
+        "top": 138,
+        "right": 164,
+        "bottom": 152
+      }
+    },
+    {
+      "text": "SUBTOTAL",
+      "box": {
+        "left": 108,
+        "top": 248,
+        "right": 209,
+        "bottom": 261
+      }
+    },
+    {
+      "text": "GST 5%",
+      "box": {
+        "left": 133,
+        "top": 263,
+        "right": 211,
+        "bottom": 275
+      }
+    },
+    {
+      "text": "1 GRILLED PRK LIENPO",
+      "box": {
+        "left": 122,
+        "top": 151,
+        "right": 235,
+        "bottom": 167
+      }
+    },
+    {
+      "text": "1 GRILLED CHX INASAL",
+      "box": {
+        "left": 121,
+        "top": 164,
+        "right": 236,
+        "bottom": 180
+      }
+    },
+    {
+      "text": "1 SIZZLING SISIG",
+      "box": {
+        "left": 120,
+        "top": 177,
+        "right": 215,
+        "bottom": 192
+      }
+    },
+    {
+      "text": "1 UBE CAKE",
+      "box": {
+        "left": 120,
+        "top": 190,
+        "right": 177,
+        "bottom": 204
+      }
+    },
+    {
+      "text": "TOTAL DUE",
+      "box": {
+        "left": 94,
+        "top": 307,
+        "right": 213,
+        "bottom": 321
+      }
+    },
+    {
+      "text": "CHECK TOTAL SPLIT 3 WAYS",
+      "box": {
+        "left": 77,
+        "top": 370,
+        "right": 244,
+        "bottom": 389
+      }
+    },
+    {
+      "text": "AMOUNT",
+      "box": {
+        "left": 284,
+        "top": 84,
+        "right": 322,
+        "bottom": 103
+      }
+    },
+    {
+      "text": "17.00",
+      "box": {
+        "left": 295,
+        "top": 111,
+        "right": 326,
+        "bottom": 126
+      }
+    },
+    {
+      "text": "15.00",
+      "box": {
+        "left": 296,
+        "top": 124,
+        "right": 326,
+        "bottom": 139
+      }
+    },
+    {
+      "text": "22.00",
+      "box": {
+        "left": 296,
+        "top": 137,
+        "right": 329,
+        "bottom": 153
+      }
+    },
+    {
+      "text": "24.00",
+      "box": {
+        "left": 298,
+        "top": 150,
+        "right": 329,
+        "bottom": 166
+      }
+    },
+    {
+      "text": "24.50",
+      "box": {
+        "left": 300,
+        "top": 163,
+        "right": 333,
+        "bottom": 180
+      }
+    },
+    {
+      "text": "11.50",
+      "box": {
+        "left": 303,
+        "top": 176,
+        "right": 336,
+        "bottom": 195
+      }
+    },
+    {
+      "text": "**",
+      "box": {
+        "left": 325,
+        "top": 207,
+        "right": 337,
+        "bottom": 217
+      }
+    },
+    {
+      "text": "114.O0",
+      "box": {
+        "left": 266,
+        "top": 235,
+        "right": 341,
+        "bottom": 258
+      }
+    },
+    {
+      "text": "5.70",
+      "box": {
+        "left": 290,
+        "top": 250,
+        "right": 343,
+        "bottom": 270
+      }
+    },
+    {
+      "text": "119.70",
+      "box": {
+        "left": 271,
+        "top": 295,
+        "right": 349,
+        "bottom": 317
+      }
+    },
+    {
+      "text": "39.90",
+      "box": {
+        "left": 322,
+        "top": 359,
+        "right": 359,
+        "bottom": 377
+      }
+    }
+  ],
+  "expected": {
+    "itemCount": 6,
+    "items": [
+      {
+        "name": "SLAMDUNK WINGS",
+        "qty": 1,
+        "lineTotal": 1700
+      },
+      {
+        "name": "LUMPIA",
+        "qty": 1,
+        "lineTotal": 1500
+      },
+      {
+        "name": "GRILLED PRK LIENPO",
+        "qty": 1,
+        "lineTotal": 2200
+      },
+      {
+        "name": "GRILLED CHX INASAL",
+        "qty": 1,
+        "lineTotal": 2400
+      },
+      {
+        "name": "SIZZLING SISIG",
+        "qty": 1,
+        "lineTotal": 2450
+      },
+      {
+        "name": "UBE CAKE",
+        "qty": 1,
+        "lineTotal": 1150
+      }
+    ],
+    "subtotal": 11400,
+    "serviceCharge": 0,
+    "vat": 570,
+    "discount": 0,
+    "vatMode": "ADDITIVE",
+    "total": 11970,
+    "reconciled": true
+  }
+}

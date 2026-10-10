@@ -1,0 +1,310 @@
+{
+  "source": "Sanitized ML Kit output from supplied low-resolution receipt, recognized at 2x and boxes mapped to source coordinates. Numeric expectations checked against image; names retain OCR spelling. No source image retained.",
+  "name": "filipino-small",
+  "lines": [
+    {
+      "text": "TEST RECEIPT",
+      "box": {
+        "left": 0,
+        "top": 0,
+        "right": 150,
+        "bottom": 15
+      }
+    },
+    {
+      "text": "1 CRISPY HITO D",
+      "box": {
+        "left": 78,
+        "top": 264,
+        "right": 154,
+        "bottom": 277
+      }
+    },
+    {
+      "text": "1 SISISD",
+      "box": {
+        "left": 78,
+        "top": 278,
+        "right": 123,
+        "bottom": 289
+      }
+    },
+    {
+      "text": "Bangus D",
+      "box": {
+        "left": 93,
+        "top": 291,
+        "right": 134,
+        "bottom": 301
+      }
+    },
+    {
+      "text": "1 NILASING NA HIPON D",
+      "box": {
+        "left": 79,
+        "top": 301,
+        "right": 185,
+        "bottom": 313
+      }
+    },
+    {
+      "text": "1 Suan na tahong D",
+      "box": {
+        "left": 75,
+        "top": 313,
+        "right": 170,
+        "bottom": 325
+      }
+    },
+    {
+      "text": "1 FREE Caiote Frit D",
+      "box": {
+        "left": 81,
+        "top": 324,
+        "right": 180,
+        "bottom": 339
+      }
+    },
+    {
+      "text": "UAT Sales",
+      "box": {
+        "left": 88,
+        "top": 413,
+        "right": 134,
+        "bottom": 422
+      }
+    },
+    {
+      "text": "2 Steamed Rice D e32.00",
+      "box": {
+        "left": 75,
+        "top": 337,
+        "right": 195,
+        "bottom": 350
+      }
+    },
+    {
+      "text": "12* UAT",
+      "box": {
+        "left": 90,
+        "top": 437,
+        "right": 123,
+        "bottom": 446
+      }
+    },
+    {
+      "text": "CASH",
+      "box": {
+        "left": 89,
+        "top": 461,
+        "right": 109,
+        "bottom": 470
+      }
+    },
+    {
+      "text": "Amournt Due:",
+      "box": {
+        "left": 89,
+        "top": 387,
+        "right": 196,
+        "bottom": 400
+      }
+    },
+    {
+      "text": "UAT Exenpt Sales",
+      "box": {
+        "left": 88,
+        "top": 424,
+        "right": 169,
+        "bottom": 435
+      }
+    },
+    {
+      "text": "250,00",
+      "box": {
+        "left": 227,
+        "top": 267,
+        "right": 258,
+        "bottom": 276
+      }
+    },
+    {
+      "text": "189.00",
+      "box": {
+        "left": 228,
+        "top": 279,
+        "right": 258,
+        "bottom": 289
+      }
+    },
+    {
+      "text": ") SANGKATUTAK NA FISHBALLS D 130.00",
+      "box": {
+        "left": 79,
+        "top": 349,
+        "right": 257,
+        "bottom": 364
+      }
+    },
+    {
+      "text": "1 BEEF SPARERIBS CALDERE TA D 360.00",
+      "box": {
+        "left": 79,
+        "top": 361,
+        "right": 257,
+        "bottom": 377
+      }
+    },
+    {
+      "text": "250.00",
+      "box": {
+        "left": 227,
+        "top": 304,
+        "right": 258,
+        "bottom": 314
+      }
+    },
+    {
+      "text": "250.00",
+      "box": {
+        "left": 227,
+        "top": 317,
+        "right": 258,
+        "bottom": 326
+      }
+    },
+    {
+      "text": "D.00",
+      "box": {
+        "left": 237,
+        "top": 329,
+        "right": 258,
+        "bottom": 339
+      }
+    },
+    {
+      "text": "64.00",
+      "box": {
+        "left": 232,
+        "top": 342,
+        "right": 258,
+        "bottom": 351
+      }
+    },
+    {
+      "text": "1,493.00",
+      "box": {
+        "left": 217,
+        "top": 390,
+        "right": 257,
+        "bottom": 400
+      }
+    },
+    {
+      "text": "1.333.04",
+      "box": {
+        "left": 217,
+        "top": 415,
+        "right": 256,
+        "bottom": 424
+      }
+    },
+    {
+      "text": "0.00",
+      "box": {
+        "left": 236,
+        "top": 427,
+        "right": 256,
+        "bottom": 436
+      }
+    },
+    {
+      "text": "159,96",
+      "box": {
+        "left": 226,
+        "top": 439,
+        "right": 256,
+        "bottom": 448
+      }
+    },
+    {
+      "text": "1.500.00",
+      "box": {
+        "left": 216,
+        "top": 462,
+        "right": 255,
+        "bottom": 472
+      }
+    },
+    {
+      "text": "7.00",
+      "box": {
+        "left": 236,
+        "top": 475,
+        "right": 255,
+        "bottom": 484
+      }
+    },
+    {
+      "text": "Charnge Due:",
+      "box": {
+        "left": 89,
+        "top": 473,
+        "right": 143,
+        "bottom": 483
+      }
+    }
+  ],
+  "expected": {
+    "itemCount": 8,
+    "items": [
+      {
+        "name": "CRISPY HITO D",
+        "qty": 1,
+        "lineTotal": 25000
+      },
+      {
+        "name": "SISISD Bangus D",
+        "qty": 1,
+        "lineTotal": 18900
+      },
+      {
+        "name": "NILASING NA HIPON D",
+        "qty": 1,
+        "lineTotal": 25000
+      },
+      {
+        "name": "Suan na tahong D",
+        "qty": 1,
+        "lineTotal": 25000
+      },
+      {
+        "name": "FREE Caiote Frit D",
+        "qty": 1,
+        "lineTotal": 0
+      },
+      {
+        "name": "Steamed Rice D",
+        "qty": 2,
+        "lineTotal": 6400
+      },
+      {
+        "name": ") SANGKATUTAK NA FISHBALLS D",
+        "qty": 1,
+        "lineTotal": 13000
+      },
+      {
+        "name": "BEEF SPARERIBS CALDERE TA D",
+        "qty": 1,
+        "lineTotal": 36000
+      }
+    ],
+    "subtotal": 149300,
+    "serviceCharge": 0,
+    "vat": 15996,
+    "discount": 0,
+    "vatMode": "INCLUSIVE",
+    "total": 149300,
+    "reconciled": true
+  }
+}

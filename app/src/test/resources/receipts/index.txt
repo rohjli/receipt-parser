@@ -8,3 +8,5 @@ quantity
 commas
 mismatch
 missing-total
+halina-skewed
+filipino-small

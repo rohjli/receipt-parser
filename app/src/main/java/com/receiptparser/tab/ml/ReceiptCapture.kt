@@ -35,16 +35,22 @@ class ReceiptCapture @Inject constructor(@param:ApplicationContext private val c
             7 -> { setRotate(270f); postScale(-1f, 1f) }; 8 -> setRotate(270f)
         } }
         val upright = if (transform.isIdentity) bitmap else Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, transform, true)
+        // Small shared images often have single-digit text heights. Enlarge only the OCR
+        // input; retain the source image and map recognition boxes back to its coordinates.
+        val ocrScale = if (maxOf(upright.width, upright.height) < 1000) 2 else 1
+        val ocrBitmap = if (ocrScale == 1) upright else Bitmap.createScaledBitmap(
+            upright, upright.width * ocrScale, upright.height * ocrScale, true,
+        )
         val directory = File(context.filesDir, "receipts").apply { mkdirs() }
         val image = File(directory, "${UUID.randomUUID()}.jpg")
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         try {
-            val text = recognizer.process(InputImage.fromBitmap(upright, 0)).await()
+            val text = recognizer.process(InputImage.fromBitmap(ocrBitmap, 0)).await()
             require(text.text.isNotBlank()) { "No text found. Retake the photo in better light, or enter items manually." }
             image.outputStream().use { check(upright.compress(Bitmap.CompressFormat.JPEG, 90, it)) }
-            val lines = text.textBlocks.flatMap { it.lines }.mapNotNull { line -> line.boundingBox?.let { b -> OcrLine(line.text, Box(b.left, b.top, b.right, b.bottom)) } }
+            val lines = text.textBlocks.flatMap { it.lines }.mapNotNull { line -> line.boundingBox?.let { b -> OcrLine(line.text, Box(b.left / ocrScale, b.top / ocrScale, b.right / ocrScale, b.bottom / ocrScale)) } }
             ReceiptParser.parse(lines).copy(imagePath = image.absolutePath, rawText = text.text)
         } catch (e: Exception) { image.delete(); throw e }
-        finally { recognizer.close(); if (upright !== bitmap) upright.recycle(); bitmap.recycle() }
+        finally { recognizer.close(); if (ocrBitmap !== upright) ocrBitmap.recycle(); if (upright !== bitmap) upright.recycle(); bitmap.recycle() }
     }
 }
