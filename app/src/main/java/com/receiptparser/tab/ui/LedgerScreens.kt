@@ -4,7 +4,10 @@ package com.receiptparser.tab.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -18,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.receiptparser.tab.data.*
@@ -26,10 +31,11 @@ import com.receiptparser.tab.domain.*
 import java.time.*
 import java.io.File
 
-@Composable fun HomeScreen(vm: LedgerViewModel, snackbar: SnackbarHostState, onFriend: (String) -> Unit, onEdit: (String) -> Unit, onShare: (String) -> Unit, nudge: () -> Unit, paid: (String, Long) -> Unit, onCapture: () -> Unit) {
+@Composable fun HomeScreen(vm: LedgerViewModel, snackbar: SnackbarHostState, onFriend: (String) -> Unit, onEdit: (String) -> Unit, onShare: (String) -> Unit, nudge: () -> Unit, onPayment: (String, Long, Long, String, () -> Unit) -> Unit, onCapture: () -> Unit) {
     val s = vm.snapshot
     var archive by rememberSaveable { mutableStateOf(false) }
-    var settled by rememberSaveable { mutableStateOf(false) }
+    var noBalanceExpanded by rememberSaveable { mutableStateOf(true) }
+    var paymentFriendId by rememberSaveable { mutableStateOf<String?>(null) }
     var adding by remember { mutableStateOf(false) }
     Page {
         BrandHeader()
@@ -41,11 +47,14 @@ import java.io.File
             }
             return@Page
         }
-        val open = s.friends.filter { s.balance(it.id) != 0L }.sortedByDescending { s.balance(it.id) }
-        val owed = s.friends.sumOf { s.balance(it.id).coerceAtLeast(0) }
-        val credits = s.friends.sumOf { (-s.balance(it.id)).coerceAtLeast(0) }
+        val oweYou = s.friends.filter { s.balance(it.id) > 0L }.sortedByDescending { s.balance(it.id) }
+        val youOwe = s.friends.filter { s.balance(it.id) < 0L }.sortedBy { s.balance(it.id) }
+        val noBalance = s.friends.filter { s.balance(it.id) == 0L }.sortedBy { it.name.lowercase() }
+        val owed = oweYou.sumOf { s.balance(it.id) }
+        val credits = youOwe.sumOf { -s.balance(it.id) }
         BalanceCard("Friends owe you", owed,
-            if (credits > 0) "You also owe ${Money.format(credits)} in credits." else if (owed > 0) "Across ${open.count { s.balance(it.id) > 0 }} open ${if (open.count { s.balance(it.id) > 0 } == 1) "balance" else "balances"}" else "All settled up") {
+            if (owed > 0) "From ${oweYou.size} ${if (oweYou.size == 1) "person" else "people"}" else "No one owes you right now") {
+            if (credits > 0) Text("You also owe ${Money.format(credits)} in credits.", style = MaterialTheme.typography.bodySmall)
             Button(onClick = onCapture, colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)) {
                 Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("New receipt")
@@ -67,25 +76,79 @@ import java.io.File
             FilterChip(archive, { archive = true }, label = { Text("Receipts (${s.receipts.size})") })
         }
         if (!archive) {
-            if (open.isNotEmpty()) SectionHeading("Open balances")
-            if (open.isEmpty()) EmptyState("Nothing outstanding", "Start a new receipt when you pick up the next bill.", Icons.Outlined.CheckCircle)
-            open.forEach { friend ->
+            if (s.friends.isEmpty()) EmptyState("No balances yet", "Add a friend or start a receipt to begin your tab.", Icons.Outlined.CheckCircle)
+            BalanceSectionHeading("Owe you", oweYou.size)
+            if (oweYou.isEmpty() && s.friends.isNotEmpty()) Text("No one owes you right now.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            oweYou.forEach { friend ->
                 val balance = s.balance(friend.id)
-                Card(onClick = { onFriend(friend.id) }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Card(onClick = { onFriend(friend.id) }, modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Avatar(friend.name)
-                            Column(Modifier.weight(1f)) { Text(friend.name, style = MaterialTheme.typography.titleMedium); Text(if (balance < 0) "You owe them" else s.oldestOutstanding(friend.id)?.let { "Open since ${dateText(it)}" } ?: "Open balance", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            Column(Modifier.weight(1f)) {
+                                Text(friend.name, style = MaterialTheme.typography.titleMedium)
+                                Text(s.oldestOutstanding(friend.id)?.let { "Since ${dateText(it)}" } ?: "Outstanding balance", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (friend.archived) Text("Archived", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                             Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        AmountRow(if (balance < 0) "Credit to return" else "Remaining", kotlin.math.abs(balance), strong = true)
-                        if (balance > 0) TextButton(onClick = { paid(friend.id, balance) }, enabled = !vm.busy, modifier = Modifier.align(Alignment.End)) { Text("Paid in full") }
+                        BalanceOwedAmount(balance)
+                        Button(onClick = { vm.error = null; paymentFriendId = friend.id }, enabled = !vm.busy,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                            Icon(Icons.Outlined.Add, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Record payment")
+                        }
                     }
                 }
             }
-            val zero = s.friends.filter { s.balance(it.id) == 0L }
-            if (zero.isNotEmpty()) TextButton(onClick = { settled = !settled }) { Text("Settled (${zero.size})"); Icon(if (settled) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null) }
-            if (settled) zero.forEach { friend -> ListItem(headlineContent = { Text(friend.name) }, supportingContent = { Text("All square") }, trailingContent = { TextButton(onClick = { onFriend(friend.id) }) { Text("History") } }) }
+            if (youOwe.isNotEmpty()) BalanceSectionHeading("You owe", youOwe.size)
+            youOwe.forEach { friend ->
+                Card(onClick = { onFriend(friend.id) }, modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Avatar(friend.name)
+                            Column(Modifier.weight(1f)) {
+                                Text(friend.name, style = MaterialTheme.typography.titleMedium)
+                                Text("You owe", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (friend.archived) Text("Archived", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        AmountRow("Credit to return", -s.balance(friend.id), strong = true)
+                    }
+                }
+            }
+            Panel {
+                TextButton(onClick = { noBalanceExpanded = !noBalanceExpanded }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .semantics { contentDescription = "No balance, ${noBalance.size} ${if (noBalance.size == 1) "person" else "people"}"; stateDescription = if (noBalanceExpanded) "Expanded" else "Collapsed" }) {
+                    Text("No balance", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    BalanceCount(noBalance.size)
+                    Spacer(Modifier.width(8.dp))
+                    Icon(if (noBalanceExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
+                }
+                if (noBalanceExpanded) {
+                    Text("Nothing owed either way", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    noBalance.forEachIndexed { index, friend ->
+                        if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Surface(onClick = { onFriend(friend.id) }, modifier = Modifier.fillMaxWidth()
+                            .semantics { contentDescription = "View history for ${friend.name}" },
+                            color = MaterialTheme.colorScheme.surface) {
+                            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Avatar(friend.name)
+                                Column(Modifier.weight(1f)) {
+                                    Text(friend.name, style = MaterialTheme.typography.bodyLarge)
+                                    if (friend.archived) Text("Archived", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if (LocalDensity.current.fontScale > 1.3f) Text(Money.format(0), style = MaterialTheme.typography.bodyMedium)
+                                }
+                                if (LocalDensity.current.fontScale <= 1.3f) Text(Money.format(0), style = MaterialTheme.typography.bodyMedium)
+                                Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
         } else {
             if (s.receipts.isEmpty()) EmptyState("Your receipts will live here", "Saved splits stay editable, with the original receipt close at hand.")
             s.receipts.forEach { receipt -> Panel {
@@ -102,6 +165,42 @@ import java.io.File
         }
     }
     if (adding) NewFriendDialog(vm.busy, vm.error, { adding = false }) { name -> vm.action { vm.repository.addFriend(name); adding = false } }
+    paymentFriendId?.let { id ->
+        s.friends.find { it.id == id }?.let { friend ->
+            PaymentDialog(friend.name, s.balance(id), vm.busy, vm.error, { paymentFriendId = null }) { amount, date, note ->
+                onPayment(id, amount, date, note) { paymentFriendId = null }
+            }
+        }
+    }
+}
+
+@Composable private fun BalanceSectionHeading(label: String, count: Int) {
+    Row(Modifier.fillMaxWidth().semantics { contentDescription = "$label, $count ${if (count == 1) "person" else "people"}"; heading() },
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(label, style = MaterialTheme.typography.titleMedium)
+        BalanceCount(count)
+    }
+}
+
+@Composable private fun BalanceCount(count: Int) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant) {
+        Text(count.toString(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Composable private fun BalanceOwedAmount(amount: Long) {
+    val largeText = LocalDensity.current.fontScale > 1.3f
+    if (largeText) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Owes you", style = MaterialTheme.typography.bodyMedium)
+            Text(Money.format(amount), style = MaterialTheme.typography.headlineMedium, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.primary)
+        }
+    } else {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Owes you", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+            Text(Money.format(amount), style = MaterialTheme.typography.headlineMedium, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.primary)
+        }
+    }
 }
 
 @Composable private fun FriendShortcut(name: String, add: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {

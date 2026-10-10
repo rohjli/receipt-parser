@@ -49,3 +49,12 @@ User supplied a two-screen bill-splitting/scanning reference and requested the s
 - Capture: white receipt-viewfinder panel with green corner marks and a rose scan line; illustration is decorative and not a fake camera preview. The Scan receipt action still opens the real ML Kit document scanner. Photo/manual recovery stays reachable. Artwork is hidden above 1.3× text scale.
 - Navigation: a white rounded surface and raised rose Capture tile, preserving all four labeled destinations and native selected tab semantics. It uses two rows at large font sizes.
 - Shared panels use soft elevation instead of prominent borders. Rounded shapes and neutral surfaces also apply to correction, assignment, friend history and settings.
+
+## Ledger — clear sections
+
+User-approved direction: keep the existing emerald summary, rose actions, friend shortcuts and navigation, while making balance direction and payment actions explicit.
+
+- Group people under **Owe you**, **You owe** (credits), and **No balance**, with people counts. Zero balances do not imply a payment or a prior shared receipt.
+- Positive balance cards show the friend, oldest outstanding date, prominent amount labeled **Owes you**, and a full-width emerald **Record payment** action. The card still opens friend history.
+- **No balance** starts expanded and can be collapsed. Its compact avatar/name/zero-amount rows retain access to history; supporting copy reads **Nothing owed either way**.
+- Use native shared theme colors, shapes and amount presentation. Amounts stack when text is enlarged. The hero counts people with positive balances using **From 1 person** / **From N people**.
