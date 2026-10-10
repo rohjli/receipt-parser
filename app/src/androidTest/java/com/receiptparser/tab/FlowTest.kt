@@ -48,18 +48,21 @@ class FlowTest {
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNodeWithText("Venue").performScrollTo()
         compose.onNodeWithText("Assign items").assertIsDisplayed().assertIsEnabled().performClick()
+        compose.onNodeWithText("Who had this?").assertExists()
+        compose.onNodeWithText("Review split").assertIsDisplayed().assertIsEnabled().performClick()
         compose.onNodeWithText("Save split").assertIsDisplayed().assertIsEnabled()
     }
 
-    @Test fun selectedItemsCanBeAssignedWithoutScrollingBackToTheTop() {
+    @Test fun guidedItemsCanBeEditedDirectlyFromTheSummary() {
         compose.waitUntil(10000) { compose.onAllNodesWithText("Try a sample receipt").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Try a sample receipt").performScrollTo().performClick()
-        compose.onNodeWithText("Iced tea").performScrollTo().performClick()
-        compose.onNodeWithText("Assign 1 item").assertIsDisplayed().performClick()
-        compose.onNode(hasText("You") and hasClickAction()).performClick()
-        compose.onNodeWithText("Done assigning").performClick()
-        compose.onNodeWithText("Iced tea").performScrollTo()
-        compose.onAllNodesWithText("Share again").assertCountEquals(1)
+        compose.onNodeWithText("View all items").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Edit Iced tea").performScrollTo().performClick()
+        compose.onNodeWithText("Iced tea").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Just me").performScrollTo().performClick()
+        compose.onNode(hasText("You") and isToggleable()).assertIsOn()
+        screenshot("tab-guided")
+        compose.onNodeWithText("View all items").performScrollTo().performClick()
         compose.onNodeWithText("Save split").assertIsDisplayed().assertIsEnabled()
     }
 
@@ -98,7 +101,10 @@ class FlowTest {
         compose.onNodeWithText("Line total").performTextReplacement("200.00")
         compose.onNodeWithText("Printed total").performScrollTo().performTextReplacement("200.00")
         compose.onNodeWithText("Assign items").assertIsDisplayed().performClick()
-        compose.onNodeWithText(name).performScrollTo().performClick()
+        compose.onNodeWithText("Add people").performScrollTo().performClick()
+        compose.onNode(hasText(name) and isToggleable() and hasAnyAncestor(isDialog())).performScrollTo().performClick()
+        compose.onNode(hasText("Done") and hasAnyAncestor(isDialog())).performScrollTo().performClick()
+        compose.onNodeWithText("Review split").performClick()
         compose.onNodeWithText("Save split").assertIsDisplayed()
         screenshot("tab-assign")
         compose.onNodeWithText("Save split").performClick()
@@ -114,6 +120,7 @@ class FlowTest {
         compose.onNodeWithText("Line total").performScrollTo().performTextReplacement("300.00")
         compose.onNodeWithText("Printed total").performScrollTo().performTextReplacement("300.00")
         compose.onNodeWithText("Assign items").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Review split").performClick()
         compose.onNodeWithText("Save changes").assertIsDisplayed().performClick()
         compose.waitUntil(10000) { compose.onAllNodesWithText("₱110.00").fetchSemanticsNodes().isNotEmpty() }
         screenshot("tab-ledger")
