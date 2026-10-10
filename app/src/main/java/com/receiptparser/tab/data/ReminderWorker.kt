@@ -48,7 +48,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val total = overdue.sumOf { snapshot.balance(it.id) }
             val detail = overdue.joinToString(" · ") { "${it.name} ${Money.format(snapshot.balance(it.id))}" }
             val pending = PendingIntent.getActivity(applicationContext, 0, Intent(applicationContext, MainActivity::class.java).putExtra("open_home", true), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            manager.notify(100, NotificationCompat.Builder(applicationContext, "open-tabs").setSmallIcon(R.drawable.ic_tab).setContentTitle("${overdue.size} ${if (overdue.size == 1) "friend owes" else "friends owe"} you ${Money.format(total)}").setContentText(detail).setStyle(NotificationCompat.BigTextStyle().bigText(detail)).setContentIntent(pending).setAutoCancel(true).build())
+            manager.notify(100, NotificationCompat.Builder(applicationContext, "open-tabs").setSmallIcon(R.drawable.ic_tungaon_monochrome).setContentTitle("${overdue.size} ${if (overdue.size == 1) "friend owes" else "friends owe"} you ${Money.format(total)}").setContentText(detail).setStyle(NotificationCompat.BigTextStyle().bigText(detail)).setContentIntent(pending).setAutoCancel(true).build())
             return Result.success()
         } catch (e: CancellationException) { throw e } catch (e: Exception) { android.util.Log.e("TabReminder", "Unable to check local balances", e); return if (runAttemptCount < 3) Result.retry() else Result.failure() }
     }

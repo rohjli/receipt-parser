@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.receiptparser.tab.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,6 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
@@ -54,8 +56,11 @@ import java.io.File
     val invalid = remember(d.id) { mutableStateMapOf<String, Boolean>() }
     var skippedOpen by rememberSaveable(d.id) { mutableStateOf(false) }
     var imageOpen by remember { mutableStateOf(false) }
-    Page {
-        TextButton(onClick = back) { Icon(Icons.Outlined.ArrowBack, null); Text("Back") }
+    val valid = d.items.isNotEmpty() && d.items.all { it.name.isNotBlank() } && invalid.values.none { it } && d.discount <= d.subtotal
+    Page(bottomBar = {
+        PrimaryAction("Assign items", next, enabled = valid && !vm.busy)
+    }) {
+        ReceiptStep(1, back)
         Heading(if (d.editing) "Edit the receipt" else "Check the receipt", "A quick check before everyone gets their share.")
         ErrorNotice(vm.error) { vm.error = null }
         d.imagePath?.let { path ->
@@ -64,7 +69,7 @@ import java.io.File
             }
         }
         OutlinedTextField(d.venue, { text -> vm.change { it.copy(venue = text.take(120)) } }, label = { Text("Venue") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-        SectionHeading("Items")
+        SectionLabel(Icons.Outlined.ReceiptLong, "Items", "Check names, quantities and line totals")
         d.items.forEach { item -> key(item.id) {
             Panel {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -79,7 +84,7 @@ import java.io.File
                         val number = text.toIntOrNull()?.takeIf { it in 1..999 }
                         invalid["qty-${item.id}"] = number == null
                         number?.let { value -> vm.change { it.copy(items = it.items.map { row -> if (row.id == item.id) row.copy(qty = value) else row }) } }
-                    }, label = { Text("Qty") }, modifier = Modifier.width(80.dp), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = qty.toIntOrNull() !in 1..999)
+                    }, label = { Text("Qty") }, modifier = Modifier.width(80.dp), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = qty.toIntOrNull() !in 1..999, supportingText = if (qty.toIntOrNull() !in 1..999) ({ Text("1–999") }) else null)
                     MoneyField("Line total", item.lineTotal, { value -> vm.change { it.copy(items = it.items.map { row -> if (row.id == item.id) row.copy(lineTotal = value) else row }) } }, Modifier.weight(1f)) { valid -> invalid[item.id] = !valid }
                 }
             }
@@ -90,7 +95,7 @@ import java.io.File
             if (skippedOpen) Panel { d.skippedRows.forEach { row -> TextButton(onClick = { vm.change { it.copy(items = it.items + ReceiptItem(name = row.take(200), rawRow = row), skippedRows = it.skippedRows - row) } }) { Text("+ $row") } } }
         }
         Panel {
-            SectionHeading("Fees & total")
+            SectionLabel(Icons.Outlined.Calculate, "Fees & total", "Use the amounts printed on the receipt")
             MoneyField("Service charge", d.serviceCharge, { value -> vm.change { it.copy(serviceCharge = value) } }) { invalid["service"] = !it }
             MoneyField("VAT", d.vat, { value -> vm.change { it.copy(vat = value) } }) { invalid["vat"] = !it }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -102,11 +107,9 @@ import java.io.File
         }
         Panel {
             AmountRow("Items + fees − discount", d.computedTotal, strong = true)
-            Text(if (d.reconciled) "Matches the receipt ✓" else "${Money.format(kotlin.math.abs(d.total - d.computedTotal))} ${if (d.total > d.computedTotal) "short of" else "over"} the printed total. You can continue; the difference stays with your share.", color = if (d.reconciled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error)
+            Text(if (d.reconciled) "Matches the receipt ✓" else "${Money.format(kotlin.math.abs(d.total - d.computedTotal))} ${if (d.total > d.computedTotal) "short of" else "over"} the printed total. You can continue; the difference stays with your share.", color = if (d.reconciled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
         }
-        val valid = d.items.isNotEmpty() && d.items.all { it.name.isNotBlank() } && invalid.values.none { it } && d.discount <= d.subtotal
         if (d.discount > d.subtotal) Text("Discount cannot exceed the item subtotal.", color = MaterialTheme.colorScheme.error)
-        Button(onClick = next, enabled = valid && !vm.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Assign items") }
         if (BuildConfig.DEBUG && d.ocrLines.isNotEmpty()) TextButton(onClick = { export.launch("receipt-${d.id}.json") }) { Text("Developer: export OCR fixture") }
         if (d.editing) TextButton(onClick = onDelete, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) { Text("Delete receipt", color = MaterialTheme.colorScheme.error) }
     }
@@ -120,22 +123,34 @@ import java.io.File
     val d = vm.draft ?: return
     var selected by remember(d.id) { mutableStateOf(setOf<String>()) }
     var adding by remember { mutableStateOf(false) }
+    var assignmentOpen by remember { mutableStateOf(false) }
     var feeOptions by remember { mutableStateOf(false) }
     val friends = ledger.snapshot.friends.filter { !it.archived || d.participants.any { p -> p.id == it.id } }
     val names = ledger.snapshot.friends.associate { it.id to it.name } + (SELF to "You")
     val ids = listOf(SELF) + d.participants.map { it.id }
     val result = remember(d) { runCatching { SplitEngine.split(d) } }
     fun setMine(itemId: String) { vm.change { it.copy(items = it.items.map { item -> if (item.id == itemId) item.copy(owners = if (item.owners == setOf(SELF)) emptySet() else setOf(SELF)) else item }) } }
-    Page {
-        TextButton(onClick = back) { Icon(Icons.Outlined.ArrowBack, null); Text("Back") }
+    Page(bottomBar = {
+        if (selected.isNotEmpty()) {
+            PrimaryAction("Assign ${selected.size} ${if (selected.size == 1) "item" else "items"}", { assignmentOpen = true }, enabled = !vm.busy)
+        } else {
+            Text("${ids.size} ${if (ids.size == 1) "person" else "people"} · ${Money.format(d.total)}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 8.dp))
+            if (!d.reconciled) Text("Total differs by ${Money.format(kotlin.math.abs(d.total - d.computedTotal))}. The difference stays with you.",
+                color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 8.dp))
+            PrimaryAction(if (vm.busy) "Saving…" else if (d.editing) "Save changes" else "Save split", { vm.save(done) }, enabled = result.isSuccess, busy = vm.busy)
+        }
+    }) {
+        ReceiptStep(2, back)
         Heading("Who had what?", "${d.venue.ifBlank { "Dinner" }} · ${Money.format(d.total)}")
         ErrorNotice(vm.error) { vm.error = null }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SectionHeading("At the table")
             TextButton(onClick = { adding = true }) { Icon(Icons.Outlined.Add, null); Text("Add friend") }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            InputChip(true, onClick = {}, label = { Text("You · paying") }, avatar = { Icon(Icons.Outlined.Person, null) })
+            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer) {
+                Text("You · paying", Modifier.padding(horizontal = 12.dp, vertical = 12.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            }
             friends.forEach { friend ->
                 val p = d.participants.find { it.id == friend.id }
                 FilterChip(p != null, onClick = {
@@ -146,22 +161,17 @@ import java.io.File
             }
         }
         if (friends.isEmpty()) Text("Add the friends at this table to start splitting.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (selected.isNotEmpty()) Panel {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { SectionHeading("Assign ${selected.size} selected"); TextButton(onClick = { selected = emptySet() }) { Text("Clear selection") } }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ids.forEach { id ->
-                    val allTagged = d.items.filter { it.id in selected }.all { id in it.owners }
-                    FilterChip(allTagged, onClick = { vm.change { it.copy(items = it.items.map { row -> if (row.id in selected) row.copy(owners = if (allTagged) row.owners - id else row.owners + id) else row }) } }, label = { Text(names[id] ?: "Friend") })
-                }
-                AssistChip(onClick = { vm.change { it.copy(items = it.items.map { row -> if (row.id in selected) row.copy(owners = emptySet()) else row }) }; selected = emptySet() }, label = { Text("Share with everyone") })
-            }
-        }
-        SectionHeading("Tap items, then pick people")
+        SectionLabel(Icons.Outlined.Restaurant, "Who’s sharing each item?", "Tap to select. Unassigned items are shared by everyone.")
+        if (selected.isNotEmpty()) TextButton(onClick = { selected = emptySet() }) { Text("Clear selection (${selected.size})") }
         d.items.forEach { item ->
-            Card(colors = CardDefaults.cardColors(containerColor = if (item.id in selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth().combinedClickable(
-                onClick = { selected = if (item.id in selected) selected - item.id else selected + item.id }, onLongClick = { setMine(item.id) }, onLongClickLabel = "Toggle mine only")) {
+            Card(colors = CardDefaults.cardColors(containerColor = if (item.id in selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth().semantics { this.selected = item.id in selected }.combinedClickable(
+                onClickLabel = "Select item to assign", onClick = { selected = if (item.id in selected) selected - item.id else selected + item.id }, onLongClick = { setMine(item.id) }, onLongClickLabel = "Toggle mine only")) {
                 Column(Modifier.padding(16.dp)) {
-                    AmountRow("${if (item.qty > 1) "${item.qty}× " else ""}${item.name}", item.lineTotal, strong = true)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(if (item.id in selected) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked, null,
+                            Modifier.size(20.dp), tint = if (item.id in selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
+                        Box(Modifier.weight(1f)) { AmountRow("${if (item.qty > 1) "${item.qty}× " else ""}${item.name}", item.lineTotal, strong = true) }
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(if (item.owners.isEmpty()) "Everyone at the table" else item.owners.joinToString(" · ") { names[it] ?: "Friend" }, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         TextButton(onClick = { setMine(item.id) }) { Text(if (item.owners == setOf(SELF)) "Share again" else "Mine only") }
@@ -174,7 +184,7 @@ import java.io.File
             AmountRow("Service charge", d.serviceCharge)
             if (d.vatMode == VatMode.ADDITIVE) AmountRow("Added VAT", d.vat)
             Text("Split fees", style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(d.feeMode == FeeMode.EQUAL, { vm.change { it.copy(feeMode = FeeMode.EQUAL) } }, label = { Text("Equally") })
                 FilterChip(d.feeMode == FeeMode.PROPORTIONAL, { vm.change { it.copy(feeMode = FeeMode.PROPORTIONAL) } }, label = { Text("By item amount") })
             }
@@ -185,16 +195,33 @@ import java.io.File
             } }
         }
         result.getOrNull()?.let { split -> Panel {
-            SectionHeading("The split")
+            SectionLabel(Icons.Outlined.PeopleOutline, "The split", "Everyone’s share, ready to save")
             split.people.forEach { AmountRow(names[it.personId] ?: "Friend", it.total, strong = true) }
-            HorizontalDivider()
+            ReceiptDivider()
             AmountRow("Receipt total", split.people.sumOf { it.total })
             Text("Friends’ totals round to the nearest peso. You cover the rounding difference.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!d.reconciled) Text("Items don’t match the printed total. The ${Money.format(d.total - d.computedTotal)} difference stays in your share.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             if (split.people.first().total < 0) Text("Your share is a credit: rounding or the printed total is lower than the assigned amounts. Check the receipt before saving.", color = MaterialTheme.colorScheme.error)
         } }
         result.exceptionOrNull()?.message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(onClick = { vm.save(done) }, enabled = result.isSuccess && !vm.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)) { Text(if (vm.busy) "Saving…" else if (d.editing) "Save changes" else "Save split") }
+    }
+    if (assignmentOpen && selected.isNotEmpty()) ModalBottomSheet(onDismissRequest = { assignmentOpen = false }) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Heading("Who shared these?", "Choose people for ${selected.size} selected ${if (selected.size == 1) "item" else "items"}.")
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ids.forEach { id ->
+                    val allTagged = d.items.filter { it.id in selected }.all { id in it.owners }
+                    FilterChip(allTagged, onClick = {
+                        vm.change { it.copy(items = it.items.map { row -> if (row.id in selected) row.copy(owners = if (allTagged) row.owners - id else row.owners + id) else row }) }
+                    }, label = { Text(names[id] ?: "Friend") }, leadingIcon = if (allTagged) ({ Icon(Icons.Outlined.Check, null, Modifier.size(18.dp)) }) else null)
+                }
+            }
+            Text("No one selected means everyone at the table shares the item.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OutlinedButton(onClick = {
+                vm.change { it.copy(items = it.items.map { row -> if (row.id in selected) row.copy(owners = emptySet()) else row }) }
+            }, modifier = Modifier.fillMaxWidth()) { Text("Share with everyone") }
+            PrimaryAction("Done assigning", { assignmentOpen = false; selected = emptySet() })
+        }
     }
     if (adding) NewFriendDialog(ledger.busy, ledger.error, { adding = false }) { name -> ledger.action { val id = ledger.repository.addFriend(name); vm.change { it.copy(participants = it.participants + Participant(id)) }; adding = false } }
 }

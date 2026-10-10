@@ -24,6 +24,45 @@ class FlowTest {
         android.os.ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("screencap -p /sdcard/Download/$name.png")).use { it.readBytes() }
     }
     @After fun clearUnfinishedTestDraft() = runBlocking { screenshot("tab-last-state"); SettingsStore(ApplicationProvider.getApplicationContext<Context>()).saveDraft(null) }
+    @Test fun ledgerFriendShortcutOpensTheirHistory() {
+        val name = "Mila"
+        compose.waitUntil(10000) { compose.onAllNodesWithText("Enter manually").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Ledger", useUnmergedTree = true).performClick()
+        compose.onNodeWithContentDescription("Add friend").performScrollTo().performClick()
+        compose.onNodeWithText("Friend’s name").performTextInput(name)
+        compose.onNode(hasText("Add friend") and hasClickAction()).performClick()
+        compose.waitUntil(5000) { compose.onAllNodesWithContentDescription(name).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription(name).performScrollTo().performClick()
+        compose.onNodeWithText("Your shared meals & payments").assertIsDisplayed()
+        compose.onNodeWithText("Record payment").assertIsDisplayed()
+    }
+
+    @Test fun receiptActionsStayVisibleWhileTheFormScrolls() {
+        compose.waitUntil(10000) { compose.onAllNodesWithText("Enter manually").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Enter manually").performScrollTo().performClick()
+        compose.onNodeWithText("Assign items").assertIsDisplayed().assertIsNotEnabled()
+        compose.onNodeWithText("Add item").performScrollTo().performClick()
+        compose.onNodeWithText("Item name").performTextInput("Rice")
+        compose.onNodeWithText("Line total").performTextReplacement("20.00")
+        compose.onNodeWithText("Printed total").performScrollTo().performTextReplacement("20.00")
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.onNodeWithText("Venue").performScrollTo()
+        compose.onNodeWithText("Assign items").assertIsDisplayed().assertIsEnabled().performClick()
+        compose.onNodeWithText("Save split").assertIsDisplayed().assertIsEnabled()
+    }
+
+    @Test fun selectedItemsCanBeAssignedWithoutScrollingBackToTheTop() {
+        compose.waitUntil(10000) { compose.onAllNodesWithText("Try a sample receipt").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Try a sample receipt").performScrollTo().performClick()
+        compose.onNodeWithText("Iced tea").performScrollTo().performClick()
+        compose.onNodeWithText("Assign 1 item").assertIsDisplayed().performClick()
+        compose.onNode(hasText("You") and hasClickAction()).performClick()
+        compose.onNodeWithText("Done assigning").performClick()
+        compose.onNodeWithText("Iced tea").performScrollTo()
+        compose.onAllNodesWithText("Share again").assertCountEquals(1)
+        compose.onNodeWithText("Save split").assertIsDisplayed().assertIsEnabled()
+    }
+
     @Test fun invalidQuantitySurvivesRecreationWithoutEnablingContinue() {
         compose.waitUntil(10000) { compose.onAllNodesWithText("Enter manually").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Enter manually").performScrollTo().performClick()
@@ -32,14 +71,14 @@ class FlowTest {
         compose.onNodeWithText("Line total").performTextReplacement("20.00")
         compose.onNodeWithText("Printed total").performScrollTo().performTextReplacement("20.00")
         compose.onNodeWithText("Qty").performScrollTo().performTextReplacement("0")
-        compose.onNodeWithText("Assign items").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("Assign items").assertIsDisplayed().assertIsNotEnabled()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("Assign items").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("Assign items").assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithText("Qty").performScrollTo().performTextReplacement("1")
         compose.onNodeWithText("Line total").performTextReplacement("invalid")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithText("Line total").performScrollTo().assertTextContains("invalid")
-        compose.onNodeWithText("Assign items").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("Assign items").assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithText("Back").performScrollTo().performClick()
         compose.onNodeWithText("Discard draft").performClick()
     }
@@ -58,13 +97,13 @@ class FlowTest {
         compose.onNodeWithText("Item name").performTextInput("Chicken inasal")
         compose.onNodeWithText("Line total").performTextReplacement("200.00")
         compose.onNodeWithText("Printed total").performScrollTo().performTextReplacement("200.00")
-        compose.onNodeWithText("Assign items").performScrollTo().performClick()
+        compose.onNodeWithText("Assign items").assertIsDisplayed().performClick()
         compose.onNodeWithText(name).performScrollTo().performClick()
-        compose.onNodeWithText("Save split").performScrollTo()
+        compose.onNodeWithText("Save split").assertIsDisplayed()
         screenshot("tab-assign")
         compose.onNodeWithText("Save split").performClick()
         compose.waitUntil(10000) { compose.onAllNodesWithText("Your tab").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText(name).performScrollTo().performClick()
+        compose.onNodeWithContentDescription(name).performScrollTo().performClick()
         compose.onNodeWithText("Record payment").performClick()
         compose.onNodeWithText("Amount received").performTextReplacement("40.00")
         compose.onNodeWithText("Save payment").performClick()
@@ -74,11 +113,11 @@ class FlowTest {
         compose.waitUntil(10000) { compose.onAllNodesWithText("Edit the receipt").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Line total").performScrollTo().performTextReplacement("300.00")
         compose.onNodeWithText("Printed total").performScrollTo().performTextReplacement("300.00")
-        compose.onNodeWithText("Assign items").performScrollTo().performClick()
-        compose.onNodeWithText("Save changes").performScrollTo().performClick()
+        compose.onNodeWithText("Assign items").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Save changes").assertIsDisplayed().performClick()
         compose.waitUntil(10000) { compose.onAllNodesWithText("₱110.00").fetchSemanticsNodes().isNotEmpty() }
         screenshot("tab-ledger")
-        compose.onNodeWithText(name).performScrollTo().performClick()
+        compose.onNodeWithContentDescription(name).performScrollTo().performClick()
         screenshot("tab-friend")
     }
 }

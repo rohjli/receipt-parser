@@ -6,9 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -16,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -60,40 +59,58 @@ import javax.inject.Inject
     }
     val busy = capture.busy || receipt.busy || launching || !receipt.ready
     Page {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("tab.", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary)
-            SuggestionChip(onClick = {}, label = { Text("ON YOUR DEVICE") }, icon = { Icon(Icons.Outlined.Lock, contentDescription = null, Modifier.size(14.dp)) })
+        BrandHeader {
+            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer) {
+                Text("LET’S SPLIT", Modifier.padding(horizontal = 10.dp, vertical = 7.dp), style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer)
+            }
         }
-        Heading("Good food.\nEasy splits.", "Snap the bill. Pick your people. All settled.")
+        Heading("Good food. Fair shares.", "A little less math. More time together.")
         ErrorNotice(capture.error) { capture.error = null }
         ErrorNotice(receipt.error) { receipt.error = null }
         if (receipt.draft != null) Panel {
-            SectionHeading("Your receipt is waiting")
-            Text(receipt.draft?.venue?.ifBlank { "Untitled receipt" } ?: "Receipt")
-            Button(onClick = { openDraft(receipt.draft?.reconciled == true) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("Resume receipt") }
-            TextButton(onClick = { discard = true }, enabled = !busy) { Text("Discard draft") }
+            SectionLabel(Icons.Outlined.History, "Pick up where you left off", "Your receipt is still in progress")
+            Text(receipt.draft?.venue?.ifBlank { "Untitled receipt" } ?: "Receipt", style = MaterialTheme.typography.titleLarge)
+                AmountRow("Receipt total", receipt.draft?.total ?: 0L, strong = true)
+            PrimaryAction("Resume receipt", { openDraft(receipt.draft?.reconciled == true) }, enabled = !busy)
+            TextButton(onClick = { discard = true }, enabled = !busy) { Text("Discard draft", color = MaterialTheme.colorScheme.error) }
         } else {
-            Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), shape = RoundedCornerShape(28.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))) {
-                Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Outlined.ReceiptLong, contentDescription = null, modifier = Modifier.size(80.dp), tint = MaterialTheme.colorScheme.primary)
-                    Text("One receipt. Everyone’s share.", style = MaterialTheme.typography.titleMedium)
-                    Text("Keep the bill flat and well lit.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button(onClick = {
+            Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface,
+                shape = MaterialTheme.shapes.extraLarge, shadowElevation = 1.dp) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (LocalDensity.current.fontScale <= 1.3f) ReceiptViewfinder()
+                    Text("Split a receipt", style = MaterialTheme.typography.titleLarge)
+                    Text("Keep it flat, well lit, and in the frame.", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    PrimaryAction(if (capture.busy) "Reading receipt…" else if (launching) "Opening scanner…" else "Scan receipt", onClick = {
                         launching = true; capture.error = null
                         val options = GmsDocumentScannerOptions.Builder().setGalleryImportAllowed(true).setPageLimit(1).setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG).setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL).build()
                         GmsDocumentScanning.getClient(options).getStartScanIntent(context as Activity)
                             .addOnSuccessListener { scanResult.launch(IntentSenderRequest.Builder(it).build()) }
                             .addOnFailureListener { launching = false; capture.error = "Scanner unavailable. Google Play services may need its first download. Choose a photo or enter items manually." }
-                    }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp)) { Icon(Icons.Outlined.DocumentScanner, null); Spacer(Modifier.width(8.dp)); Text("Scan receipt") }
+                    }, enabled = !busy, busy = capture.busy || launching)
                 }
             }
-            OutlinedButton(onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) { Icon(Icons.Outlined.PhotoLibrary, null); Spacer(Modifier.width(8.dp)); Text("Choose a photo") }
-            TextButton(onClick = { receipt.start(then = openDraft) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("Enter manually") }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                    Icon(Icons.Outlined.PhotoLibrary, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("Choose a photo")
+                }
+                TextButton(onClick = { receipt.start(then = openDraft) }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Icon(Icons.Outlined.EditNote, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("Enter manually")
+                }
+            }
         }
-        if (busy) Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) { CircularProgressIndicator(Modifier.size(24.dp)); Text(if (capture.busy) "Reading your receipt…" else "Getting ready…") }
-        HorizontalDivider()
-        Text("Your receipts stay on this device. No account needed.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (receipt.draft == null) TextButton(enabled = !busy, onClick = { receipt.start(ReceiptParser.parseText("Sunday lunch\nChicken inasal 285.00\nGarlic rice 65.00\nIced tea 80.00\nService charge 43.00\nTOTAL 473.00"), openDraft) }) { Text("Try a sample receipt") }
+        if (busy && !capture.busy && !launching) Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Text("Getting ready…", style = MaterialTheme.typography.bodyMedium)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Lock, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Private, on your device. No account needed.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (receipt.draft == null) TextButton(enabled = !busy, onClick = {
+            receipt.start(ReceiptParser.parseText("Sunday lunch\nChicken inasal 285.00\nGarlic rice 65.00\nIced tea 80.00\nService charge 43.00\nTOTAL 473.00"), openDraft)
+        }) { Text("Try a sample receipt") }
     }
     if (discard) ConfirmDialog("Discard this draft?", "Your unsaved items and assignments will be removed. Saved receipts stay in your ledger.", "Discard draft", { discard = false }) { receipt.discard { discard = false } }
 }

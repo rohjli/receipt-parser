@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.*
 import androidx.core.content.FileProvider
 import com.receiptparser.tab.domain.*
+import com.receiptparser.tab.R
 import com.receiptparser.tab.ui.dateText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,7 +23,7 @@ object ShareService {
     fun shareText(context: Context, text: String) {
         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "Share a nudge"))
     }
-    fun copy(context: Context, text: String) { (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Tab nudge", text)) }
+    fun copy(context: Context, text: String) { (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Tungaon nudge", text)) }
     suspend fun breakdown(context: Context, snapshot: LedgerSnapshot, receiptId: String, showOwn: Boolean): File = withContext(Dispatchers.Default) {
         val receipt = snapshot.receipts.first { it.id == receiptId }
         val names = snapshot.friends.associate { it.id to it.name } + (SELF to "You")
@@ -44,14 +45,17 @@ object ShareService {
         val height = 420 + rows.size * 54
         val bitmap = Bitmap.createBitmap(1080, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(Color.rgb(247,248,252))
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(25,33,58); typeface = Typeface.create("sans-serif", Typeface.NORMAL) }
+        canvas.drawColor(context.getColor(R.color.brand_cream))
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = context.getColor(R.color.brand_ink); typeface = Typeface.create("sans-serif", Typeface.NORMAL) }
         fun text(value: String, x: Float, y: Float, size: Float, bold: Boolean = false) {
             paint.textSize = size; paint.typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
             canvas.drawText(value, x, y, paint)
         }
-        text("tab.  /  ${receipt.venue.take(35)}", 60f, 90f, 48f, true)
-        text(dateText(receipt.takenAt), 60f, 145f, 28f)
+        paint.color = context.getColor(R.color.brand_emerald)
+        text(context.getString(R.string.app_name), 60f, 72f, 36f, true)
+        paint.color = context.getColor(R.color.brand_ink)
+        text(receipt.venue.take(35), 60f, 122f, 40f, true)
+        text(dateText(receipt.takenAt), 60f, 165f, 28f)
         var y = 235f
         rows.forEach { (label, amount) ->
             val heading = label.startsWith('#')
@@ -69,12 +73,12 @@ object ShareService {
         text("Receipt total: ${Money.format(receipt.total)}", 60f, y + 40, 34f, true)
         text(if (receipt.reconciled) "Rounded to the peso. The payer covers the difference." else "Saved with an adjustment to the payer’s share.", 60f, y + 92, 24f)
         val directory = File(context.cacheDir, "shares").apply { mkdirs() }
-        val file = File(directory, "tab-$receiptId.png")
+        val file = File(directory, "tungaon-$receiptId.png")
         try { withContext(Dispatchers.IO) { file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } }; file } finally { bitmap.recycle() }
     }
     fun shareImage(context: Context, file: File) {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
-        val intent = Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).apply { clipData = ClipData.newUri(context.contentResolver, "Tab breakdown", uri) }
+        val intent = Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).apply { clipData = ClipData.newUri(context.contentResolver, "Tungaon breakdown", uri) }
         context.startActivity(Intent.createChooser(intent, "Share the breakdown"))
     }
 }

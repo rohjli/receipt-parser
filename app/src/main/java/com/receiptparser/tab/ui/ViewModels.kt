@@ -18,8 +18,8 @@ import javax.inject.Inject
     var loading by mutableStateOf(true); private set
     var busy by mutableStateOf(false); private set
     init {
-        viewModelScope.launch { repository.snapshots.catch { error = "Couldn’t read the ledger. Close and reopen Tab to retry."; loading = false }.collect { snapshot = it; loading = false } }
-        viewModelScope.launch { settingsStore.settings.catch { error = "Couldn’t read settings. Close and reopen Tab to retry." }.collect { settings = it } }
+        viewModelScope.launch { repository.snapshots.catch { error = "Couldn’t read the ledger. Close and reopen Tungaon to retry."; loading = false }.collect { snapshot = it; loading = false } }
+        viewModelScope.launch { settingsStore.settings.catch { error = "Couldn’t read settings. Close and reopen Tungaon to retry." }.collect { settings = it } }
     }
     fun action(block: suspend () -> Unit) {
         if (busy) return
@@ -43,7 +43,7 @@ import javax.inject.Inject
         draft = draft?.let(transform)
         persistJob?.cancel()
         val value = draft
-        persistJob = viewModelScope.launch { try { settings.saveDraft(value) } catch (e: CancellationException) { throw e } catch (e: Exception) { error = "Draft not saved to storage. Keep Tab open and try again." } }
+        persistJob = viewModelScope.launch { try { settings.saveDraft(value) } catch (e: CancellationException) { throw e } catch (e: Exception) { error = "Draft not saved to storage. Keep Tungaon open and try again." } }
     }
     fun start(receipt: ReceiptDraft = ReceiptDraft(), then: (Boolean) -> Unit) {
         if (busy || !ready || draft != null) return

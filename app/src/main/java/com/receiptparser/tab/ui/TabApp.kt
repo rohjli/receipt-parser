@@ -8,6 +8,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -17,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.*
@@ -75,13 +82,48 @@ private data class TabDestination(val title: String, val route: Any, val icon: I
     Scaffold(
         bottomBar = { Column {
             SnackbarHost(snackbar)
-            if (!drafting) NavigationBar {
-            listOf(TabDestination("Capture", CaptureRoute, Icons.Outlined.DocumentScanner), TabDestination("Ledger", HomeRoute, Icons.Outlined.ReceiptLong), TabDestination("Friends", FriendsRoute, Icons.Outlined.PeopleOutline), TabDestination("Settings", SettingsRoute, Icons.Outlined.Tune)).forEach { tab ->
-                NavigationBarItem(selected = destination?.hasRoute(tab.route::class) == true || (tab.route == HomeRoute && destination?.hasRoute<FriendRoute>() == true), onClick = { nav.navigate(tab.route) { popUpTo<CaptureRoute> { inclusive = false }; launchSingleTop = true } }, icon = { Icon(tab.icon, null) }, label = { Text(tab.title) })
+            if (!drafting) {
+                val destinations = listOf(
+                    TabDestination("Ledger", HomeRoute, Icons.Outlined.Home),
+                    TabDestination("Capture", CaptureRoute, Icons.Outlined.DocumentScanner),
+                    TabDestination("Friends", FriendsRoute, Icons.Outlined.PeopleOutline),
+                    TabDestination("Settings", SettingsRoute, Icons.Outlined.Tune),
+                )
+                val largeText = LocalDensity.current.fontScale > 1.3f
+                Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp,
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)) {
+                    Column(Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        destinations.chunked(if (largeText) 2 else 4).forEach { row ->
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                row.forEach { tab ->
+                                    val selected = destination?.hasRoute(tab.route::class) == true || (tab.route == HomeRoute && destination?.hasRoute<FriendRoute>() == true)
+                                    Column(Modifier.weight(1f).clip(MaterialTheme.shapes.medium)
+                                        .selectable(selected, role = Role.Tab, onClick = {
+                                            nav.navigate(tab.route) { popUpTo<CaptureRoute> { inclusive = false }; launchSingleTop = true }
+                                        }).padding(vertical = 4.dp).heightIn(min = 56.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        if (tab.route == CaptureRoute) {
+                                            Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.secondaryContainer,
+                                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer, shadowElevation = 4.dp) {
+                                                Icon(tab.icon, null, Modifier.padding(horizontal = 18.dp, vertical = 12.dp).size(24.dp))
+                                            }
+                                        } else {
+                                            Icon(tab.icon, null, Modifier.padding(top = 8.dp, bottom = 4.dp).size(24.dp),
+                                                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        Text(tab.title, style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal,
+                                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        } } },
+        } },
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
+        Column(Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize()) {
             if (receipt.error != null && !drafting && destination?.hasRoute<CaptureRoute>() != true) ErrorNotice(receipt.error) { receipt.error = null }
             NavHost(navController = nav, startDestination = CaptureRoute, modifier = Modifier.weight(1f)) {
                 composable<CaptureRoute> { CaptureScreen(receipt, capture, incoming, consumeIncoming) { reconciled -> nav.navigate(if (reconciled) AssignRoute else FixRoute) } }

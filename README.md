@@ -1,6 +1,10 @@
-# receipt-parser · Tab
+# Tungaon
 
 A native Android app for splitting a dinner receipt and keeping a private running tab with friends. Built from the **Tab — receipt split app** Linear project (REC-1–24).
+
+## Download
+
+Get the APK from the [Tungaon alpha releases](https://github.com/rohjli/receipt-parser/releases). These are debug-signed builds for testing on Android 8.0+. Install updates over the existing app to keep your local ledger; do not uninstall first.
 
 ## Run locally
 
@@ -20,17 +24,17 @@ If Java isn't on your Mac's path:
 export JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home'
 ```
 
-Install SDK platform 36 and let Android Studio write `local.properties`, or set `ANDROID_HOME` to your Android SDK. Gradle project name is `receipt-parser`; package is `com.receiptparser.tab`; launcher name is **Tab**. No remote repository is configured. Build output: `app/build/outputs/apk/debug/app-debug.apk`.
+Install SDK platform 36 and let Android Studio write `local.properties`, or set `ANDROID_HOME` to your Android SDK. Gradle project name is `receipt-parser`; package is `com.receiptparser.tab`; launcher name is **Tungaon**. Build output: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Try it
 
 1. Add friends in **Friends**.
 2. **Capture** → scan, choose a photo, enter manually, or explicitly try the sample receipt.
 3. Correct names, quantities, line totals and fees if needed. VAT can be included or added. A reconciliation difference is visible and stays with your own share.
-4. Pick attendees. Untagged items belong to everyone, including you. Select one or more items, then pick their people. “Mine only” is also available by long press.
+4. Pick attendees. Untagged items belong to everyone, including you. Select one or more items, tap **Assign items**, then pick their people in the sheet. “Mine only” is also available by long press.
 5. Choose equal or proportional fees, exempt anyone who shouldn't pay fees, and **Save split**.
 6. Open the friend from **Ledger** to record a full/partial payment, view history, or prepare a nudge. **Receipts** lets you edit, delete, or share a breakdown image.
-7. Set your GCash number and reminder preferences in **Settings**. Sharing always opens the system chooser; Tab never sends a message automatically.
+7. Set your GCash number and reminder preferences in **Settings**. Sharing always opens the system chooser; Tungaon never sends a message automatically.
 
 The app starts with no friends or debt. The sample is an explicit action and only affects balances after Save split.
 
