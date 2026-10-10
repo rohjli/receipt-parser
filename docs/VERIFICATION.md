@@ -41,3 +41,18 @@ Independent code review identified the first three findings; all were addressed.
 ## Local deliverables
 
 `artifacts/receipt-parser-0.1.0-debug.apk` is the installable development build. `artifacts/` also holds screenshots and the verification log and is intentionally Git-ignored. Source, Room schema, tests, Gradle wrapper, docs and a future GitHub Actions build workflow are committed. No remote or external deployment was created.
+
+## Receipt parsing correction — 10 October 2026
+
+The reported restaurant receipts exposed two layouts missing from the original corpus: an item/total followed by `2 PCS x @ 105.00`, and a name followed by `2.0 x 35.00 70.00`. Quantity details now belong to the adjacent item instead of becoming new items. The parser checks exact centavo arithmetic, accepts an omitted multiplication mark only when both price columns agree, and retains ambiguous details for correction. Zero-rated and non-taxable sales summaries are excluded from items.
+
+Eight additional JVM regressions cover both layouts, separately positioned OCR columns, missing multiplication marks, orphan/mismatched/fractional quantities, metadata boundaries, currency-prefixed ambiguity, and numeric-leading names such as `7UP`. Tests were observed failing before their corresponding fixes; all 32 JVM tests pass afterward.
+
+Local ML Kit validation used the two supplied photos on the Android 16 emulator through `ReceiptCapture.read`, with temporary test assets removed afterward:
+
+- Restaurant receipt: three items, quantities 1/1/2, line totals ₱555/₱895/₱210, service charge ₱166, inclusive VAT ₱177.86, printed and computed total ₱1,826.
+- Café receipt: four items, quantities 1/2/1/1, line totals ₱640/₱70/₱190/₱110, printed and computed total ₱1,010. ML Kit omitted the last multiplication mark; the matching two-column fallback recovered it.
+
+This validates item structure and amounts on two real photos, not general OCR accuracy. Character recognition still needs manual correction: the café heading and `22oz` suffix were misread, and a missing space remained in one item name. The restaurant photo's merchant heading is obscured by the payment placard, which the existing venue heuristic selects. No personal photos or customer/cashier details are included in the committed regression sources. Previously saved drafts are not automatically reprocessed; import or scan the receipt again to use the corrected parser.
+
+Final validation: `./gradlew testDebugUnitTest lintDebug assembleDebug connectedDebugAndroidTest` completed successfully with 32 JVM tests and nine device tests passing. Lint reported zero errors and 29 advisory warnings; Gradle still reports deprecations for Gradle 9. The updated debug APK is at `app/build/outputs/apk/debug/app-debug.apk`.
