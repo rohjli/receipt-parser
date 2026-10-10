@@ -193,9 +193,9 @@ import java.time.format.DateTimeFormatter
     }
 }
 
-@Composable fun ReceiptStep(step: Int, back: () -> Unit) {
+@Composable fun ReceiptStep(step: Int, back: () -> Unit, backEnabled: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        TextButton(onClick = back, contentPadding = PaddingValues(horizontal = 0.dp)) {
+        TextButton(onClick = back, enabled = backEnabled, contentPadding = PaddingValues(horizontal = 0.dp)) {
             Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             Text("Back")
