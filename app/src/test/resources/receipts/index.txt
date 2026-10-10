@@ -1,0 +1,10 @@
+basic
+service
+additive-vat
+inclusive-vat
+discount
+tender
+quantity
+commas
+mismatch
+missing-total

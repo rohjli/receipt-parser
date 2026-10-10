@@ -1,0 +1,59 @@
+{
+  "source": "synthetic regression example, not a real receipt",
+  "name": "inclusive-vat",
+  "lines": [
+    {
+      "text": "CAFE",
+      "box": {
+        "left": 0,
+        "top": 0,
+        "right": 500,
+        "bottom": 20
+      }
+    },
+    {
+      "text": "Pasta 112.00",
+      "box": {
+        "left": 0,
+        "top": 30,
+        "right": 500,
+        "bottom": 50
+      }
+    },
+    {
+      "text": "VAT INCLUSIVE 12.00",
+      "box": {
+        "left": 0,
+        "top": 60,
+        "right": 500,
+        "bottom": 80
+      }
+    },
+    {
+      "text": "TOTAL 112.00",
+      "box": {
+        "left": 0,
+        "top": 90,
+        "right": 500,
+        "bottom": 110
+      }
+    }
+  ],
+  "expected": {
+    "itemCount": 1,
+    "subtotal": 11200,
+    "serviceCharge": 0,
+    "vat": 1200,
+    "discount": 0,
+    "vatMode": "INCLUSIVE",
+    "total": 11200,
+    "reconciled": true,
+    "items": [
+      {
+        "name": "Pasta",
+        "qty": 1,
+        "lineTotal": 11200
+      }
+    ]
+  }
+}

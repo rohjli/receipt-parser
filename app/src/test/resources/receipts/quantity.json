@@ -1,0 +1,64 @@
+{
+  "source": "synthetic regression example, not a real receipt",
+  "name": "quantity",
+  "lines": [
+    {
+      "text": "CAFE",
+      "box": {
+        "left": 0,
+        "top": 0,
+        "right": 500,
+        "bottom": 20
+      }
+    },
+    {
+      "text": "2 x Chicken 300.00",
+      "box": {
+        "left": 0,
+        "top": 30,
+        "right": 500,
+        "bottom": 50
+      }
+    },
+    {
+      "text": "3 Rice 150.00",
+      "box": {
+        "left": 0,
+        "top": 60,
+        "right": 500,
+        "bottom": 80
+      }
+    },
+    {
+      "text": "TOTAL 450.00",
+      "box": {
+        "left": 0,
+        "top": 90,
+        "right": 500,
+        "bottom": 110
+      }
+    }
+  ],
+  "expected": {
+    "itemCount": 2,
+    "subtotal": 45000,
+    "serviceCharge": 0,
+    "vat": 0,
+    "discount": 0,
+    "vatMode": "INCLUSIVE",
+    "total": 45000,
+    "reconciled": true,
+    "items": [
+      {
+        "name": "Chicken",
+        "qty": 2,
+        "lineTotal": 30000
+      },
+      {
+        "name": "Rice",
+        "qty": 3,
+        "lineTotal": 15000
+      }
+    ]
+  }
+}

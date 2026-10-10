@@ -1,0 +1,50 @@
+{
+  "source": "synthetic regression example, not a real receipt",
+  "name": "basic",
+  "lines": [
+    {
+      "text": "CAFE",
+      "box": {
+        "left": 0,
+        "top": 0,
+        "right": 500,
+        "bottom": 20
+      }
+    },
+    {
+      "text": "Pasta 100.00",
+      "box": {
+        "left": 0,
+        "top": 30,
+        "right": 500,
+        "bottom": 50
+      }
+    },
+    {
+      "text": "TOTAL 100.00",
+      "box": {
+        "left": 0,
+        "top": 60,
+        "right": 500,
+        "bottom": 80
+      }
+    }
+  ],
+  "expected": {
+    "itemCount": 1,
+    "subtotal": 10000,
+    "serviceCharge": 0,
+    "vat": 0,
+    "discount": 0,
+    "vatMode": "INCLUSIVE",
+    "total": 10000,
+    "reconciled": true,
+    "items": [
+      {
+        "name": "Pasta",
+        "qty": 1,
+        "lineTotal": 10000
+      }
+    ]
+  }
+}
