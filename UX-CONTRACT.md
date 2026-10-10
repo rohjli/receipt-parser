@@ -31,3 +31,11 @@ English locale with Philippine peso formatting (two decimals); dates use local t
 - Ledger offers real friend shortcuts in a horizontally scrollable row. Add friend invokes the existing creation dialog; a saved friend tile opens that friend’s history. Archived friends remain discoverable through Friends → Archived.
 - Capture remains the launch destination and the highlighted scan destination. Bottom navigation keeps Capture, Ledger, Friends and Settings with labels, selection semantics, and 48dp minimum interaction targets.
 - The receipt viewfinder is decorative only. Camera permission/capture/cropping belong to the existing ML Kit scanner, and no animation implies a scan is underway while idle.
+
+## Ledger balance sections
+
+- HomeScreen groups the existing derived person balances by sign: positive under **Owe you**, negative under **You owe**, and zero under **No balance**. Counts refer to people, including archived people already represented in the ledger. Archiving never hides an outstanding balance or removes history.
+- **No balance** is initially expanded; the disclosure state survives recreation. Newly added friends with no receipt history belong here without a paid/settled status claim.
+- **Record payment** on a positive balance opens the shared `PaymentDialog` used by FriendScreen, prefilled with that balance. Opening or cancelling the dialog writes nothing. Amount, date, note, validation, overpayment credit messaging and busy/error behavior remain shared.
+- TabApp owns the successful payment transaction and Snackbar Undo. The dialog closes only on successful persistence. Reactive balances then move a fully paid person into **No balance**, retain a partially paid person under **Owe you**, or place an overpayment under **You owe**. Undo restores the derived prior balance.
+- Positive cards, credit cards and zero-balance rows preserve access to friend history. Credit cards do not offer an action that incorrectly records money received.
