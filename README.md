@@ -42,7 +42,7 @@ The app starts with no friends or debt. The sample is an explicit action and onl
 
 All money is integer centavos; friends' final amounts round HALF_UP to the nearest peso. Robert/“You” absorbs fractional and reconciliation differences. No self friend row is created. Fee, discount and rounding adjustments remain separate. Balances are calculated from receipt shares minus payments. Overpayment becomes credit. Receipt edits replace shares atomically without modifying payments.
 
-Room stores ledger data and app-private images; DataStore stores settings and the current draft. No backend, analytics, account or cloud ledger. Cloud app backup is disabled. **Uninstalling or losing the device loses the ledger until export/import backup is added.**
+Room stores ledger data and app-private images; DataStore stores settings and the current draft. No backend, analytics, account or cloud ledger. Automatic cloud app backup is disabled. Use **Settings → Backup & restore** to save a portable ZIP containing saved receipts and photos, friends, payments, and saved settings. Save or discard an unfinished receipt first. Restore checks the file and asks before replacing the current ledger. Backups are not encrypted; keep them somewhere private and accessible from another device. **Uninstalling or losing the device loses data that you have not backed up.** See [backup and restore](docs/BACKUP-RESTORE.md).
 
 ## Structure
 
@@ -55,4 +55,4 @@ Room stores ledger data and app-private images; DataStore stores settings and th
 
 See [ticket coverage](docs/TICKET-COVERAGE.md), [design](DESIGN.md), [UX contract](UX-CONTRACT.md), and [verification](docs/VERIFICATION.md).
 
-Real receipts were not supplied: the ten JSON fixtures are **synthetic regression cases**, not evidence of the REC-9 “8 out of 10 real receipts” gate. Scanner quality, physical-device reboot reminders, the under-30-second dinner target and two weeks of collection usage still need field testing. GenAI cleanup (REC-23) and JSON backup (REC-24) remain future work.
+Real receipts were not supplied: the ten JSON fixtures are **synthetic regression cases**, not evidence of the REC-9 “8 out of 10 real receipts” gate. Scanner quality, physical-device reboot reminders, the under-30-second dinner target and two weeks of collection usage still need field testing. GenAI cleanup (REC-23) remains future work. Portable backup and restore (REC-24) is available in Settings.

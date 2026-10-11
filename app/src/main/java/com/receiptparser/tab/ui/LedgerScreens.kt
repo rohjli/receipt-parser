@@ -320,7 +320,7 @@ private data class HistoryRow(val id: String, val at: Long, val title: String, v
     if (adding) NewFriendDialog(vm.busy, vm.error, { adding = false }) { name -> vm.action { vm.repository.addFriend(name); adding = false } }
 }
 
-@Composable fun SettingsScreen(vm: LedgerViewModel, saved: () -> Unit) {
+@Composable fun SettingsScreen(vm: LedgerViewModel, onBackup: () -> Unit = {}, saved: () -> Unit) {
     var gcash by rememberSaveable(vm.settings.gcash) { mutableStateOf(vm.settings.gcash) }
     var hours by rememberSaveable(vm.settings.reminderHours) { mutableStateOf(vm.settings.reminderHours.toString()) }
     var start by rememberSaveable(vm.settings.quietStart) { mutableStateOf(vm.settings.quietStart.toString()) }
@@ -354,6 +354,13 @@ private data class HistoryRow(val id: String, val at: Long, val title: String, v
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { FilterChip(mode == FeeMode.EQUAL, { mode = FeeMode.EQUAL }, label = { Text("Fees equally") }); FilterChip(mode == FeeMode.PROPORTIONAL, { mode = FeeMode.PROPORTIONAL }, label = { Text("Fees by item amount") }) }
             Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(own, { own = it }); Text("Show my share on breakdown images") }
         }
-        Text("Tungaon ${BuildConfig.VERSION_NAME} · Stored on this device\nRemoving the app removes your ledger. Export/import backup is planned.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Panel {
+            SectionLabel(Icons.Outlined.Backup, "Backup & restore")
+            Text("Keep a copy of your saved receipts, photos, friends, payments and saved settings.")
+            OutlinedButton(onClick = onBackup, enabled = !vm.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                Text("Open backup & restore")
+            }
+        }
+        Text("Tungaon ${BuildConfig.VERSION_NAME} · Stored on this device\nRemoving the app removes your ledger. Keep a backup somewhere safe.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

@@ -18,6 +18,16 @@ import org.junit.runner.RunWith
 class FlowTest {
     @get:Rule(order = 0) val notifications = GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
     @get:Rule(order = 1) val compose = createAndroidComposeRule<MainActivity>()
+    private fun waitForEnabled(text: String) {
+        compose.waitUntil(10_000) {
+            compose.onAllNodes(hasText(text) and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+    private fun waitForDisplayed(text: String) {
+        compose.waitUntil(10_000) {
+            runCatching { compose.onNodeWithText(text).assertIsDisplayed() }.isSuccess
+        }
+    }
     private fun screenshot(name: String) {
         compose.waitForIdle()
         val automation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
@@ -26,7 +36,7 @@ class FlowTest {
     @After fun clearUnfinishedTestDraft() = runBlocking { screenshot("tab-last-state"); SettingsStore(ApplicationProvider.getApplicationContext<Context>()).saveDraft(null) }
     @Test fun ledgerFriendShortcutOpensTheirHistory() {
         val name = "Mila"
-        compose.waitUntil(10000) { compose.onAllNodesWithText("Enter manually").fetchSemanticsNodes().isNotEmpty() }
+        waitForEnabled("Enter manually")
         compose.onNodeWithText("Ledger", useUnmergedTree = true).performClick()
         compose.onNodeWithContentDescription("Add friend").performScrollTo().performClick()
         compose.onNodeWithText("Friend’s name").performTextInput(name)
@@ -38,8 +48,9 @@ class FlowTest {
     }
 
     @Test fun receiptActionsStayVisibleWhileTheFormScrolls() {
-        compose.waitUntil(10000) { compose.onAllNodesWithText("Enter manually").fetchSemanticsNodes().isNotEmpty() }
+        waitForEnabled("Enter manually")
         compose.onNodeWithText("Enter manually").performScrollTo().performClick()
+        waitForDisplayed("Assign items")
         compose.onNodeWithText("Assign items").assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithText("Add item").performScrollTo().performClick()
         compose.onNodeWithText("Item name").performTextInput("Rice")
@@ -54,8 +65,9 @@ class FlowTest {
     }
 
     @Test fun guidedItemsCanBeEditedDirectlyFromTheSummary() {
-        compose.waitUntil(10000) { compose.onAllNodesWithText("Try a sample receipt").fetchSemanticsNodes().isNotEmpty() }
+        waitForEnabled("Try a sample receipt")
         compose.onNodeWithText("Try a sample receipt").performScrollTo().performClick()
+        waitForDisplayed("Who had this?")
         compose.onNodeWithText("View all items").performScrollTo().performClick()
         compose.onNodeWithContentDescription("Edit Iced tea").performScrollTo().performClick()
         compose.onNodeWithText("Iced tea").performScrollTo().assertIsDisplayed()
@@ -67,8 +79,9 @@ class FlowTest {
     }
 
     @Test fun invalidQuantitySurvivesRecreationWithoutEnablingContinue() {
-        compose.waitUntil(10000) { compose.onAllNodesWithText("Enter manually").fetchSemanticsNodes().isNotEmpty() }
+        waitForEnabled("Enter manually")
         compose.onNodeWithText("Enter manually").performScrollTo().performClick()
+        waitForDisplayed("Assign items")
         compose.onNodeWithText("Add item").performScrollTo().performClick()
         compose.onNodeWithText("Item name").performTextInput("Rice")
         compose.onNodeWithText("Line total").performTextReplacement("20.00")
@@ -87,14 +100,16 @@ class FlowTest {
     }
     @Test fun manualReceiptFriendPaymentAndEditing() {
         val name = "Carlo"
-        compose.waitUntil(15000) { compose.onAllNodesWithText("Enter manually").fetchSemanticsNodes().isNotEmpty() }
+        waitForEnabled("Enter manually")
         compose.onNodeWithText("Friends", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Add friend").performClick()
         compose.onNodeWithText("Friend’s name").performTextInput(name)
         compose.onAllNodesWithText("Add friend").onLast().performClick()
         compose.waitUntil(5000) { compose.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Capture", useUnmergedTree = true).performClick()
+        waitForEnabled("Enter manually")
         compose.onNodeWithText("Enter manually").performScrollTo().performClick()
+        waitForDisplayed("Assign items")
         compose.onNodeWithText("Venue").performTextInput("Sunday lunch")
         compose.onNodeWithText("Add item").performScrollTo().performClick()
         compose.onNodeWithText("Item name").performTextInput("Chicken inasal")

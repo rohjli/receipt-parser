@@ -14,7 +14,7 @@ Sources: docs/superpowers/specs/2026-10-10-tab-mvp-design.md and Linear REC-1–
 | Sharing | Android chooser, no automatic send; empty GCash leads to settings | ShareService |
 | Settings | Fixed save action; DataStore local save; quiet hours and delay validated | SettingsScreen |
 
-English locale with Philippine peso formatting (two decimals); dates use local timezone and unambiguous month names. A receipt is counted only once saved. Busy controls disable duplicate submission. Navigation and dialogs use Compose semantics; text scales with OS. Drafts and all ledger data stay in private storage. Automatic cloud backup disabled until explicit export/import exists. Database does not destructively migrate. Browser-only audit rules do not apply to this native app.
+English locale with Philippine peso formatting (two decimals); dates use local timezone and unambiguous month names. A receipt is counted only once saved. Busy controls disable duplicate submission. Navigation and dialogs use Compose semantics; text scales with OS. Drafts and all ledger data stay in private storage. Automatic cloud backup remains disabled; portable export/import is explicitly user initiated through Android’s document picker. Database does not destructively migrate. Browser-only audit rules do not apply to this native app.
 
 ## Layout and interaction owners
 
@@ -39,3 +39,12 @@ English locale with Philippine peso formatting (two decimals); dates use local t
 - **Record payment** on a positive balance opens the shared `PaymentDialog` used by FriendScreen, prefilled with that balance. Opening or cancelling the dialog writes nothing. Amount, date, note, validation, overpayment credit messaging and busy/error behavior remain shared.
 - TabApp owns the successful payment transaction and Snackbar Undo. The dialog closes only on successful persistence. Reactive balances then move a fully paid person into **No balance**, retain a partially paid person under **Owe you**, or place an overpayment under **You owe**. Undo restores the derived prior balance.
 - Positive cards, credit cards and zero-balance rows preserve access to friend history. Credit cards do not offer an action that incorrectly records money received.
+
+## Portable backup and restore
+
+- Settings → Backup & restore exports a versioned ZIP with all saved ledger rows, referenced receipt photos and saved settings. Unfinished drafts and unsaved settings are excluded; finish or discard any draft before starting either operation. Files are not encrypted and the page explains their private contents.
+- Create backup uses Android CreateDocument; Choose backup uses OpenDocument. Cancelling either picker changes nothing. Success is reported only after file streams close successfully. Invalid, incomplete, unsupported or oversized archives never change the ledger.
+- Restore shows creation date and record/photo counts, then requires **Replace and restore**. It replaces current saved data and settings, without merging. Cancel discards only the staged preview. A newly created draft blocks restore even after file inspection.
+- Operations block duplicate actions and app navigation while active. Completion clears stale payment Undo and navigation history so imported IDs cannot be acted on from an old screen.
+- A Room transaction replaces exact records and writes a pending settings marker. DataStore replacement completes next; startup/retry must finish a pending marker before exposing the app. A failed recovery keeps the app blocked with a visible Retry action. Reads wait during recovery; writes reject while recovery is required.
+- Receipt images are staged to new private paths and synced before the transaction; previous private photos are retained to avoid deleting an image needed by a failed restore. Backup files contain only photos referenced by saved receipts.

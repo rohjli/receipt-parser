@@ -2,11 +2,14 @@ package com.receiptparser.tab.data
 
 import androidx.room.*
 import com.receiptparser.tab.domain.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Entity(tableName = "friend")
+@Serializable
 data class FriendEntity(@PrimaryKey val id: String, val name: String, val color: Int = 0, val gcashHint: String = "", val lastUsedAt: Long = 0, val archived: Boolean = false)
 @Entity(tableName = "receipt")
+@Serializable
 data class ReceiptEntity(
     @PrimaryKey val id: String, val takenAt: Long, val venue: String, val imagePath: String?,
     val rawOcrText: String, val ocrJson: String, val skippedJson: String, val subtotal: Long,
@@ -15,14 +18,19 @@ data class ReceiptEntity(
 )
 @Entity(tableName = "receipt_participant", primaryKeys = ["receiptId", "friendId"],
     foreignKeys = [ForeignKey(entity = ReceiptEntity::class, parentColumns = ["id"], childColumns = ["receiptId"], onDelete = ForeignKey.CASCADE)], indices = [Index("friendId")])
+@Serializable
 data class ParticipantEntity(val receiptId: String, val friendId: String, val paysFees: Boolean, val feeShare: Long, val discountShare: Long, val rounding: Long)
 @Entity(tableName = "line_item", foreignKeys = [ForeignKey(entity = ReceiptEntity::class, parentColumns = ["id"], childColumns = ["receiptId"], onDelete = ForeignKey.CASCADE)], indices = [Index("receiptId")])
+@Serializable
 data class LineItemEntity(@PrimaryKey val id: String, val receiptId: String, val name: String, val qty: Int, val unitPrice: Long, val lineTotal: Long, val rawRow: String, val sortOrder: Int, val ownersJson: String)
 @Entity(tableName = "item_share", primaryKeys = ["lineItemId", "friendId"], foreignKeys = [ForeignKey(entity = LineItemEntity::class, parentColumns = ["id"], childColumns = ["lineItemId"], onDelete = ForeignKey.CASCADE)], indices = [Index("friendId")])
+@Serializable
 data class ShareEntity(val lineItemId: String, val friendId: String, val amount: Long)
 @Entity(tableName = "payment", foreignKeys = [ForeignKey(entity = FriendEntity::class, parentColumns = ["id"], childColumns = ["friendId"], onDelete = ForeignKey.RESTRICT)], indices = [Index("friendId")])
+@Serializable
 data class PaymentEntity(@PrimaryKey val id: String, val friendId: String, val amount: Long, val paidAt: Long, val note: String)
 
+@Serializable
 data class LedgerSnapshot(
     val friends: List<FriendEntity> = emptyList(), val receipts: List<ReceiptEntity> = emptyList(),
     val participants: List<ParticipantEntity> = emptyList(), val items: List<LineItemEntity> = emptyList(),

@@ -12,21 +12,22 @@ import javax.inject.Singleton
 @Singleton class TabRepository @Inject constructor(private val db: TabDatabase) {
     private val dao get() = db.dao()
     val snapshots = dao.observeChanges().map { snapshot() }
-    suspend fun snapshot(): LedgerSnapshot = db.withTransaction { LedgerSnapshot(dao.friends(), dao.receipts(), dao.participants(), dao.items(), dao.shares(), dao.payments()) }
-    suspend fun addFriend(name: String): String = db.withTransaction {
+    suspend fun snapshot(): LedgerSnapshot = StorageGate.read { snapshotRaw() }
+    internal suspend fun snapshotRaw(): LedgerSnapshot = db.withTransaction { LedgerSnapshot(dao.friends(), dao.receipts(), dao.participants(), dao.items(), dao.shares(), dao.payments()) }
+    suspend fun addFriend(name: String): String = StorageGate.access { db.withTransaction {
         val trimmed = name.trim()
         require(trimmed.isNotEmpty() && trimmed.length <= 60) { "Use a name between 1 and 60 characters." }
         require(dao.friends().none { it.name.equals(trimmed, true) }) { "That name is already in your friends, possibly archived." }
         val id = UUID.randomUUID().toString()
         dao.putFriend(FriendEntity(id, trimmed, color = dao.friends().size % 6))
         id
-    }
-    suspend fun updateFriend(friend: FriendEntity) = db.withTransaction {
+    } }
+    suspend fun updateFriend(friend: FriendEntity) = StorageGate.access { db.withTransaction {
         require(friend.name.trim().isNotEmpty() && friend.name.length <= 60) { "Enter a name of 1–60 characters." }
         require(dao.friends().none { it.id != friend.id && it.name.equals(friend.name.trim(), true) }) { "That name is already in your friends." }
         dao.putFriend(friend.copy(name = friend.name.trim()))
-    }
-    suspend fun save(draft: ReceiptDraft) {
+    } }
+    suspend fun save(draft: ReceiptDraft) = StorageGate.access {
         val split = SplitEngine.split(draft)
         require(draft.venue.length <= 120) { "Keep the venue under 120 characters." }
         db.withTransaction {
@@ -45,8 +46,8 @@ import javax.inject.Singleton
             draft.participants.forEach { p -> dao.putFriend(friends.getValue(p.id).copy(lastUsedAt = System.currentTimeMillis())) }
         }
     }
-    suspend fun deleteReceipt(id: String) = db.withTransaction { dao.deleteReceipt(id) }
-    suspend fun recordPayment(friendId: String, amount: Long, paidAt: Long, note: String): String = db.withTransaction {
+    suspend fun deleteReceipt(id: String) = StorageGate.access { db.withTransaction { dao.deleteReceipt(id) } }
+    suspend fun recordPayment(friendId: String, amount: Long, paidAt: Long, note: String): String = StorageGate.access { db.withTransaction {
         require(amount in 1..Money.MAX) { "Enter a positive amount up to ₱10,000,000." }
         require(paidAt in 0..System.currentTimeMillis()) { "Payment date cannot be in the future." }
         require(note.length <= 250) { "Keep the note under 250 characters." }
@@ -54,6 +55,8 @@ import javax.inject.Singleton
         val id = UUID.randomUUID().toString()
         dao.putPayment(PaymentEntity(id, friendId, amount, paidAt, note.trim()))
         id
+    } }
+    suspend fun undoPayment(id: String, expectedGeneration: Long? = null) = StorageGate.access {
+        if (expectedGeneration == null || expectedGeneration == StorageGate.generation) dao.deletePayment(id)
     }
-    suspend fun undoPayment(id: String) = dao.deletePayment(id)
 }
