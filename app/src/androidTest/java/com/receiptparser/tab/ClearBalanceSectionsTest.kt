@@ -123,7 +123,7 @@ class ClearBalanceSectionsTest {
         compose.onNodeWithText("Record payment").performScrollTo().performClick()
         compose.onNodeWithText("Amount received").performTextReplacement("40.00")
         compose.onNodeWithText("Save payment").performClick()
-        compose.waitUntil(5_000) { repositoryBalance(alice) == 6000L && !ledger.busy }
+        compose.waitUntil(5_000) { ledger.snapshot.balance(alice) == 6000L && !ledger.busy }
         compose.onAllNodesWithText("₱60.00").assertCountEquals(2)
         compose.onAllNodesWithText("₱60.00").onLast().performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Owe you, 1 person").assertExists()
@@ -131,7 +131,7 @@ class ClearBalanceSectionsTest {
         compose.onNodeWithText("Record payment").performScrollTo().performClick()
         compose.onNodeWithText("Amount received").performTextReplacement("60.00")
         compose.onNodeWithText("Save payment").performClick()
-        compose.waitUntil(5_000) { repositoryBalance(alice) == 0L && !ledger.busy }
+        compose.waitUntil(5_000) { ledger.snapshot.balance(alice) == 0L && !ledger.busy }
         compose.onNodeWithContentDescription("Owe you, 0 people").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("No balance, 2 people").performScrollTo().assertIsDisplayed()
 

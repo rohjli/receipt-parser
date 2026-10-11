@@ -58,3 +58,7 @@ User-approved direction: keep the existing emerald summary, rose actions, friend
 - Positive balance cards show the friend, oldest outstanding date, prominent amount labeled **Owes you**, and a full-width emerald **Record payment** action. The card still opens friend history.
 - **No balance** starts expanded and can be collapsed. Its compact avatar/name/zero-amount rows retain access to history; supporting copy reads **Nothing owed either way**.
 - Use native shared theme colors, shapes and amount presentation. Amounts stack when text is enlarged. The hero counts people with positive balances using **From 1 person** / **From N people**.
+
+## Backup and restore
+
+Settings links to a dedicated Backup & restore page using the existing Page, Panel, SectionLabel and action components. Emerald identifies backup creation; destructive restore confirmation uses the existing error color plus explicit replacement wording. The preview lists backup date and receipt, friend, payment and photo counts. File selection belongs to Android's document picker. Draft blocking, unencrypted-file disclosure, saved-settings scope, progress, errors and recovery are expressed in text, with scrollable confirmation content at large font scales.

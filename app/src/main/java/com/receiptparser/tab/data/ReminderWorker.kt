@@ -19,18 +19,18 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
 import java.time.ZonedDateTime
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 @EntryPoint @InstallIn(SingletonComponent::class)
-interface ReminderDependencies { fun repository(): TabRepository; fun settings(): SettingsStore }
+interface ReminderDependencies { fun backup(): BackupService }
 class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         try {
             val deps = EntryPointAccessors.fromApplication(applicationContext, ReminderDependencies::class.java)
-            val settings = deps.settings().settings.first()
+            val generation = StorageGate.generation
+            val (settings, snapshot) = deps.backup().readForReminder()
             val now = ZonedDateTime.now()
             if (Ledger.isQuietHour(now.hour, settings.quietStart, settings.quietEnd)) {
                 var next = now.withHour(settings.quietEnd).withMinute(0).withSecond(0).withNano(0)
@@ -41,15 +41,19 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val manager = applicationContext.getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(NotificationChannel("open-tabs", "Open tabs", NotificationManager.IMPORTANCE_DEFAULT))
             if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return Result.success()
-            val snapshot = deps.repository().snapshot()
             val threshold = System.currentTimeMillis() - settings.reminderHours * 3_600_000L
             val overdue = snapshot.friends.filter { snapshot.balance(it.id) > 0 && (snapshot.oldestOutstanding(it.id)?.let { date -> date <= threshold } == true) }
             if (overdue.isEmpty()) { manager.cancel(100); return Result.success() }
             val total = overdue.sumOf { snapshot.balance(it.id) }
             val detail = overdue.joinToString(" · ") { "${it.name} ${Money.format(snapshot.balance(it.id))}" }
             val pending = PendingIntent.getActivity(applicationContext, 0, Intent(applicationContext, MainActivity::class.java).putExtra("open_home", true), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            manager.notify(100, NotificationCompat.Builder(applicationContext, "open-tabs").setSmallIcon(R.drawable.ic_tungaon_monochrome).setContentTitle("${overdue.size} ${if (overdue.size == 1) "friend owes" else "friends owe"} you ${Money.format(total)}").setContentText(detail).setStyle(NotificationCompat.BigTextStyle().bigText(detail)).setContentIntent(pending).setAutoCancel(true).build())
-            return Result.success()
+            return StorageGate.exclusive {
+                if (StorageGate.blocked || StorageGate.generation != generation) Result.retry()
+                else {
+                    manager.notify(100, NotificationCompat.Builder(applicationContext, "open-tabs").setSmallIcon(R.drawable.ic_tungaon_monochrome).setContentTitle("${overdue.size} ${if (overdue.size == 1) "friend owes" else "friends owe"} you ${Money.format(total)}").setContentText(detail).setStyle(NotificationCompat.BigTextStyle().bigText(detail)).setContentIntent(pending).setAutoCancel(true).build())
+                    Result.success()
+                }
+            }
         } catch (e: CancellationException) { throw e } catch (e: Exception) { android.util.Log.e("TabReminder", "Unable to check local balances", e); return if (runAttemptCount < 3) Result.retry() else Result.failure() }
     }
     companion object {

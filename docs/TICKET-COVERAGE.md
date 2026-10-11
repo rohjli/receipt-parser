@@ -27,6 +27,6 @@ Project: [Tab — receipt split app](https://linear.app/paddle-next/project/tab-
 | REC-21 | Private 1080px PNG and FileProvider chooser; optional own share | Native Canvas with stacked person sections instead of Compose columns; very long export capped |
 | REC-22 | DataStore GCash, reminder delay, quiet hours, fee mode, own-share toggle | English/PHP only |
 | REC-23 | Deferred as specified by ticket | Device-gated GenAI cleanup follows real receipt validation |
-| REC-24 | Deferred as specified by ticket | JSON backup/import not included; data loss limitation disclosed |
+| REC-24 | Settings export/import of versioned JSON-and-photo ZIP; validated replacement preview; exact ledger/settings preservation; Room recovery marker | Unencrypted user-managed files; finish/discard drafts first. Physical provider and phone-transfer field check remains. See BACKUP-RESTORE.md. |
 
 No fabricated receipts are represented as real-world evidence. Milestone 2’s real receipt gate, milestone 3’s actual dinner gate, and milestone 4’s two-week outcome gate need the user's field use.
